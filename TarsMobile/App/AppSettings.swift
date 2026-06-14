@@ -60,19 +60,23 @@ final class AppSettings: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let legacyBaseURL = defaults.string(forKey: Keys.serverBaseURL)
-        self.directBaseURLString = defaults.string(forKey: Keys.directBaseURL)
+        let resolvedDirectBaseURL = defaults.string(forKey: Keys.directBaseURL)
             ?? legacyBaseURL
             ?? "http://127.0.0.1:18991"
-        self.relayBaseURLString = defaults.string(forKey: Keys.relayBaseURL)
+        let resolvedRelayBaseURL = defaults.string(forKey: Keys.relayBaseURL)
             ?? Self.defaultRelayBaseURL(from: legacyBaseURL)
-        self.sessionID = defaults.string(forKey: Keys.sessionID)
-            ?? "mobile-main"
         let initialConnectionModeRaw = defaults.string(forKey: Keys.connectionMode)
             ?? Self.defaultConnectionModeRaw
-        self.connectionModeRaw = Self.resolvedConnectionModeRaw(
+        let resolvedConnectionModeRaw = Self.resolvedConnectionModeRaw(
             initialConnectionModeRaw,
-            directBaseURLString: directBaseURLString
+            directBaseURLString: resolvedDirectBaseURL
         )
+
+        self.directBaseURLString = resolvedDirectBaseURL
+        self.relayBaseURLString = resolvedRelayBaseURL
+        self.sessionID = defaults.string(forKey: Keys.sessionID)
+            ?? "mobile-main"
+        self.connectionModeRaw = resolvedConnectionModeRaw
         self.relayToken = defaults.string(forKey: Keys.relayToken) ?? ""
         self.relayAgentID = defaults.string(forKey: Keys.relayAgentID) ?? "default"
         self.relayClientID = defaults.string(forKey: Keys.relayClientID)
