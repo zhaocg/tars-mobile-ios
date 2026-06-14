@@ -7,23 +7,21 @@ struct RootView: View {
     var body: some View {
         ChatView(viewModel: viewModel)
             .onAppear {
-                viewModel.configure(
-                    baseURL: settings.serverBaseURL,
-                    sessionID: settings.sessionID
-                )
+                configureViewModel()
             }
-            .onChange(of: settings.serverBaseURLString) { _, _ in
-                viewModel.configure(
-                    baseURL: settings.serverBaseURL,
-                    sessionID: settings.sessionID
-                )
-            }
-            .onChange(of: settings.sessionID) { _, newValue in
-                viewModel.configure(
-                    baseURL: settings.serverBaseURL,
-                    sessionID: newValue
-                )
+            .onChange(of: settings.connectionFingerprint) { _, _ in
+                configureViewModel()
             }
     }
-}
 
+    private func configureViewModel() {
+        viewModel.configure(
+            baseURL: settings.serverBaseURL,
+            sessionID: settings.sessionID,
+            connectionMode: settings.connectionMode,
+            relayToken: settings.relayToken,
+            relayAgentID: settings.relayAgentID,
+            relayClientID: settings.relayClientID
+        )
+    }
+}

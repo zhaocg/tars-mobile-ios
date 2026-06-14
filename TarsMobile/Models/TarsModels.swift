@@ -1,5 +1,23 @@
 import Foundation
 
+enum TarsConnectionMode: String, CaseIterable, Identifiable {
+    case direct
+    case relay
+
+    var id: String {
+        rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .direct:
+            return "Direct"
+        case .relay:
+            return "Relay"
+        }
+    }
+}
+
 struct TarsHealthResponse: Decodable {
     let status: String
 }
@@ -46,6 +64,11 @@ struct TarsTranscriptEntry: Decodable, Identifiable, Equatable {
 
 struct TarsSubmitMessageResponse: Decodable {
     let run: TarsRunRecord
+}
+
+struct TarsRelayAcceptedResponse: Decodable {
+    let eventId: String
+    let accepted: Bool
 }
 
 struct TarsSessionEvent: Decodable, Identifiable {
@@ -126,4 +149,3 @@ extension ISO8601DateFormatter {
         return formatter
     }()
 }
-

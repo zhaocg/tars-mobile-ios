@@ -57,6 +57,10 @@ struct ChatView: View {
                 .font(.footnote.monospaced())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+
+            Text(settings.connectionMode.title)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

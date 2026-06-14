@@ -8,8 +8,19 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Connection") {
-                    LabeledContent("Server URL") {
-                        TextField("http://127.0.0.1:18991", text: $settings.serverBaseURLString)
+                    Picker("Mode", selection: $settings.connectionModeRaw) {
+                        ForEach(TarsConnectionMode.allCases) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+
+                    LabeledContent(settings.connectionMode == .relay ? "Relay URL" : "Server URL") {
+                        TextField(
+                            settings.connectionMode == .relay
+                                ? "https://tarsrelay.example.com"
+                                : "http://127.0.0.1:18991",
+                            text: $settings.serverBaseURLString
+                        )
                             .keyboardType(.URL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
@@ -24,8 +35,35 @@ struct SettingsView: View {
                     }
                 }
 
+                if settings.connectionMode == .relay {
+                    Section("Relay") {
+                        LabeledContent("Relay Token") {
+                            SecureField("Bearer token", text: $settings.relayToken)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .multilineTextAlignment(.trailing)
+                        }
+
+                        LabeledContent("Agent ID") {
+                            TextField("default", text: $settings.relayAgentID)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .multilineTextAlignment(.trailing)
+                        }
+
+                        LabeledContent("Client ID") {
+                            TextField("ios-device", text: $settings.relayClientID)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+
                 Section("Notes") {
-                    Text("Use the Mac or server LAN IP when running on a physical iPhone.")
+                    Text(settings.connectionMode == .relay
+                         ? "Use Relay when the iPhone and Tars are not on the same network."
+                         : "Use the Mac or server LAN IP when running on a physical iPhone.")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -40,4 +78,3 @@ struct SettingsView: View {
         }
     }
 }
-

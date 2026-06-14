@@ -11,6 +11,10 @@ final class ChatViewModel: ObservableObject {
 
     private var apiClient: TarsAPIClient?
     private var baseURL: URL?
+    private var connectionMode: TarsConnectionMode = .direct
+    private var relayToken = ""
+    private var relayAgentID = "default"
+    private var relayClientID = ""
     private var sessionID = ""
     private var eventsTask: Task<Void, Never>?
     private var transcriptMessages: [ChatMessage] = []
@@ -20,7 +24,14 @@ final class ChatViewModel: ObservableObject {
         eventsTask?.cancel()
     }
 
-    func configure(baseURL: URL?, sessionID: String) {
+    func configure(
+        baseURL: URL?,
+        sessionID: String,
+        connectionMode: TarsConnectionMode,
+        relayToken: String,
+        relayAgentID: String,
+        relayClientID: String
+    ) {
         guard let baseURL else {
             self.apiClient = nil
             self.sessionID = sessionID
@@ -30,12 +41,28 @@ final class ChatViewModel: ObservableObject {
             return
         }
 
-        if self.sessionID == sessionID, self.baseURL == baseURL, self.apiClient != nil {
+        if self.sessionID == sessionID,
+           self.baseURL == baseURL,
+           self.connectionMode == connectionMode,
+           self.relayToken == relayToken,
+           self.relayAgentID == relayAgentID,
+           self.relayClientID == relayClientID,
+           self.apiClient != nil {
             return
         }
 
-        self.apiClient = TarsAPIClient(baseURL: baseURL)
+        self.apiClient = TarsAPIClient(
+            baseURL: baseURL,
+            mode: connectionMode,
+            relayToken: relayToken,
+            relayAgentID: relayAgentID,
+            relayClientID: relayClientID
+        )
         self.baseURL = baseURL
+        self.connectionMode = connectionMode
+        self.relayToken = relayToken
+        self.relayAgentID = relayAgentID
+        self.relayClientID = relayClientID
         self.sessionID = sessionID
         reconnect()
     }
@@ -115,7 +142,7 @@ final class ChatViewModel: ObservableObject {
         switch event.type {
         case "session.connected":
             isConnected = true
-            activityText = "Connected"
+            activityText = connectionMode == .relay ? "Connected via Relay" : "Connected"
 
         case "session.snapshot", "transcript.updated":
             if let transcript = event.payload?.transcript {
@@ -130,7 +157,7 @@ final class ChatViewModel: ObservableObject {
                 streamingMessagesByRunID[runID] = nil
                 renderMessages()
             }
-            activityText = "Connected"
+            activityText = connectionMode == .relay ? "Connected via Relay" : "Connected"
 
         case "message.error":
             errorMessage = event.payload?.message ?? "The model response failed."
