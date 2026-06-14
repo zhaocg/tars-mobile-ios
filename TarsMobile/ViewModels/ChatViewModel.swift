@@ -11,7 +11,6 @@ final class ChatViewModel: ObservableObject {
 
     private var apiClient: TarsAPIClient?
     private var baseURL: URL?
-    private var connectionMode: TarsConnectionMode = .direct
     private var relayToken = ""
     private var relayAgentID = "default"
     private var relayClientID = ""
@@ -27,7 +26,6 @@ final class ChatViewModel: ObservableObject {
     func configure(
         baseURL: URL?,
         sessionID: String,
-        connectionMode: TarsConnectionMode,
         relayToken: String,
         relayAgentID: String,
         relayClientID: String
@@ -43,7 +41,6 @@ final class ChatViewModel: ObservableObject {
 
         if self.sessionID == sessionID,
            self.baseURL == baseURL,
-           self.connectionMode == connectionMode,
            self.relayToken == relayToken,
            self.relayAgentID == relayAgentID,
            self.relayClientID == relayClientID,
@@ -53,13 +50,11 @@ final class ChatViewModel: ObservableObject {
 
         self.apiClient = TarsAPIClient(
             baseURL: baseURL,
-            mode: connectionMode,
             relayToken: relayToken,
             relayAgentID: relayAgentID,
             relayClientID: relayClientID
         )
         self.baseURL = baseURL
-        self.connectionMode = connectionMode
         self.relayToken = relayToken
         self.relayAgentID = relayAgentID
         self.relayClientID = relayClientID
@@ -142,7 +137,7 @@ final class ChatViewModel: ObservableObject {
         switch event.type {
         case "session.connected":
             isConnected = true
-            activityText = connectionMode == .relay ? "Connected via Relay" : "Connected"
+            activityText = "Connected via Relay"
 
         case "session.snapshot", "transcript.updated":
             if let transcript = event.payload?.transcript {
@@ -157,7 +152,7 @@ final class ChatViewModel: ObservableObject {
                 streamingMessagesByRunID[runID] = nil
                 renderMessages()
             }
-            activityText = connectionMode == .relay ? "Connected via Relay" : "Connected"
+            activityText = "Connected via Relay"
 
         case "message.error":
             errorMessage = event.payload?.message ?? "The model response failed."

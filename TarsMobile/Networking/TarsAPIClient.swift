@@ -16,6 +16,9 @@ enum TarsAPIError: Error, LocalizedError, Equatable {
         case .invalidResponse:
             return "The server returned an invalid response."
         case .httpStatus(let status):
+            if status == 404 {
+                return "The relay returned HTTP 404. Redeploy tars-relay with mobile relay endpoints or check the Relay URL."
+            }
             return "The server returned HTTP \(status)."
         case .decodingFailed:
             return "The server event could not be decoded."
@@ -25,7 +28,6 @@ enum TarsAPIError: Error, LocalizedError, Equatable {
 
 final class TarsAPIClient {
     private let baseURL: URL
-    private let mode: TarsConnectionMode
     private let relayToken: String?
     private let relayAgentID: String
     private let relayClientID: String
@@ -36,14 +38,12 @@ final class TarsAPIClient {
 
     init(
         baseURL: URL,
-        mode: TarsConnectionMode = .direct,
         relayToken: String? = nil,
         relayAgentID: String = "default",
         relayClientID: String = "",
         urlSession: URLSession = .shared
     ) {
         self.baseURL = baseURL
-        self.mode = mode
         self.relayToken = relayToken?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank
         self.relayAgentID = relayAgentID.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank ?? "default"
         self.relayClientID = relayClientID.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -58,38 +58,15 @@ final class TarsAPIClient {
     }
 
     func sessions() async throws -> [TarsSessionSummary] {
-        let response: TarsSessionsResponse = try await get(path: "/sessions")
-        return response.sessions
+        []
     }
 
-    func transcript(sessionID: String) async throws -> [TarsTranscriptEntry] {
-        if mode == .relay {
-            return []
-        }
-
-        let response: TarsTranscriptResponse = try await get(
-            path: "/sessions/\(Self.pathEscape(sessionID))/transcript"
-        )
-        return response.transcript
+    func transcript(sessionID _: String) async throws -> [TarsTranscriptEntry] {
+        []
     }
 
     func submitMessage(_ message: String, sessionID: String) async throws -> TarsRunRecord {
-        if mode == .relay {
-            return try await submitRelayMessage(message, sessionID: sessionID)
-        }
-
-        struct Body: Encodable {
-            let message: String
-            let stream: Bool
-            let background: Bool
-        }
-
-        let body = Body(message: message, stream: true, background: true)
-        let response: TarsSubmitMessageResponse = try await post(
-            path: "/sessions/\(Self.pathEscape(sessionID))/messages",
-            body: body
-        )
-        return response.run
+        try await submitRelayMessage(message, sessionID: sessionID)
     }
 
     func sessionEvents(sessionID: String) -> AsyncThrowingStream<TarsSessionEvent, Error> {
@@ -209,19 +186,15 @@ final class TarsAPIClient {
         return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 
-    private func sessionEventsURL(sessionID: String) -> URL {
-        if mode == .relay {
-            let clientID = relayClientID.trimmingCharacters(in: .whitespacesAndNewlines)
-            return url(
-                path: "/integrations/mobile/relay/clients/\(Self.pathEscape(clientID))/events"
-            )
-        }
-
-        return url(path: "/sessions/\(Self.pathEscape(sessionID))/events")
+    private func sessionEventsURL(sessionID _: String) -> URL {
+        let clientID = relayClientID.trimmingCharacters(in: .whitespacesAndNewlines)
+        return url(
+            path: "/integrations/mobile/relay/clients/\(Self.pathEscape(clientID))/events"
+        )
     }
 
     private func applyAuthorization(to request: inout URLRequest) {
-        guard mode == .relay, let relayToken else {
+        guard let relayToken else {
             return
         }
 

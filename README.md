@@ -4,12 +4,13 @@ Native iOS client for talking to a self-hosted Tars WebChat server.
 
 ## Current step
 
-This first step creates the app shell and the API boundary:
+This app is relay-only. It is intended for phones that cannot reach the local
+Tars machine directly.
 
 - SwiftUI application scaffold.
-- Direct or relay connection mode settings.
-- Tars HTTP client for health, sessions, transcript, and message submission.
-- SSE client for `/sessions/{sessionId}/events`.
+- Relay connection settings.
+- Tars Relay HTTP client for message submission.
+- SSE client for mobile relay events.
 - Chat screen with streaming `message.delta` support.
 - `WKWebView` message renderer with bundled `markdown-it` and `echarts`.
 
@@ -17,44 +18,30 @@ This first step creates the app shell and the API boundary:
 
 Open `TarsMobile.xcodeproj` on macOS with Xcode 15 or newer.
 
-The default server URL is:
-
-```text
-http://127.0.0.1:18991
-```
-
-For a physical iPhone, replace `127.0.0.1` with the LAN IP address of the machine running Tars.
-
-If the iPhone and Tars are not on the same network, use Relay mode instead.
+The default Relay URL is `https://tarsrelay.pqcenter.cn`.
 
 ## Tars endpoints used
 
 - `GET /health`
-- `GET /sessions`
-- `GET /sessions/{sessionId}/transcript`
-- `GET /sessions/{sessionId}/events`
-- `POST /sessions/{sessionId}/messages`
+- `GET /integrations/mobile/relay/clients/{clientId}/events`
+- `POST /integrations/mobile/relay/agents/{agentId}/sessions/{sessionId}/messages`
 
 Messages are submitted with:
 
 ```json
 {
-  "message": "Hello",
-  "stream": true,
-  "background": true
+  "clientId": "ios-device",
+  "message": "Hello"
 }
 ```
 
 The app keeps an SSE subscription open and renders `message.delta`, `transcript.updated`,
 `message.completed`, `message.error`, and `tool.started` events.
 
-## Relay mode
+## Relay setup
 
-Relay mode is for phones that cannot reach the local Tars machine directly.
+Settings in the app:
 
-Settings:
-
-- Mode: `Relay`
 - Relay URL: your deployed relay, for example `https://tarsrelay.pqcenter.cn`
 - Relay Token: the token configured on the relay
 - Agent ID: must match local Tars `TARS_MOBILE_RELAY_AGENT_ID`
@@ -68,6 +55,10 @@ $env:TARS_MOBILE_RELAY_TOKEN = 'same-token-as-relay'
 $env:TARS_MOBILE_RELAY_AGENT_ID = 'default'
 npm run start
 ```
+
+If the app reports HTTP 404, the iPhone reached the relay but the deployed relay
+does not expose the mobile relay endpoints above, or the Relay URL points at the
+wrong service. Redeploy `tars-relay` with mobile relay support and restart it.
 
 ## Markdown and charts
 

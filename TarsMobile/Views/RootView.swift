@@ -16,9 +16,8 @@ struct RootView: View {
 
     private func configureViewModel() {
         viewModel.configure(
-            baseURL: settings.activeBaseURL,
+            baseURL: settings.relayBaseURL,
             sessionID: settings.sessionID,
-            connectionMode: settings.connectionMode,
             relayToken: settings.relayToken,
             relayAgentID: settings.relayAgentID,
             relayClientID: settings.relayClientID

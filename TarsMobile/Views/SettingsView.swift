@@ -8,28 +8,12 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Connection") {
-                    Picker("Mode", selection: $settings.connectionModeRaw) {
-                        ForEach(TarsConnectionMode.allCases) { mode in
-                            Text(mode.title).tag(mode.rawValue)
-                        }
-                    }
-
-                    if settings.connectionMode == .relay {
-                        LabeledContent("Relay URL") {
-                            TextField("https://tarsrelay.pqcenter.cn", text: $settings.relayBaseURLString)
-                                .keyboardType(.URL)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .multilineTextAlignment(.trailing)
-                        }
-                    } else {
-                        LabeledContent("Server URL") {
-                            TextField("http://127.0.0.1:18991", text: $settings.directBaseURLString)
-                                .keyboardType(.URL)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .multilineTextAlignment(.trailing)
-                        }
+                    LabeledContent("Relay URL") {
+                        TextField("https://tarsrelay.pqcenter.cn", text: $settings.relayBaseURLString)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .multilineTextAlignment(.trailing)
                     }
 
                     LabeledContent("Session ID") {
@@ -40,35 +24,31 @@ struct SettingsView: View {
                     }
                 }
 
-                if settings.connectionMode == .relay {
-                    Section("Relay") {
-                        LabeledContent("Relay Token") {
-                            SecureField("Bearer token", text: $settings.relayToken)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .multilineTextAlignment(.trailing)
-                        }
+                Section("Relay") {
+                    LabeledContent("Relay Token") {
+                        SecureField("Bearer token", text: $settings.relayToken)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .multilineTextAlignment(.trailing)
+                    }
 
-                        LabeledContent("Agent ID") {
-                            TextField("default", text: $settings.relayAgentID)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .multilineTextAlignment(.trailing)
-                        }
+                    LabeledContent("Agent ID") {
+                        TextField("default", text: $settings.relayAgentID)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .multilineTextAlignment(.trailing)
+                    }
 
-                        LabeledContent("Client ID") {
-                            TextField("ios-device", text: $settings.relayClientID)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .multilineTextAlignment(.trailing)
-                        }
+                    LabeledContent("Client ID") {
+                        TextField("ios-device", text: $settings.relayClientID)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .multilineTextAlignment(.trailing)
                     }
                 }
 
                 Section("Notes") {
-                    Text(settings.connectionMode == .relay
-                         ? "Use Relay when the iPhone and Tars are not on the same network."
-                         : "Use the Mac or server LAN IP when running on a physical iPhone.")
+                    Text("The iOS app connects through Tars Relay only. Local Tars must run with matching mobile relay settings.")
                         .foregroundStyle(.secondary)
                 }
             }

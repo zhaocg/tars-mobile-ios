@@ -58,7 +58,7 @@ struct ChatView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 
-            Text(settings.connectionMode.title)
+            Text("Relay")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
         }

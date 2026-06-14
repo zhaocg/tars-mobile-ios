@@ -1,23 +1,5 @@
 import Foundation
 
-enum TarsConnectionMode: String, CaseIterable, Identifiable {
-    case direct
-    case relay
-
-    var id: String {
-        rawValue
-    }
-
-    var title: String {
-        switch self {
-        case .direct:
-            return "Direct"
-        case .relay:
-            return "Relay"
-        }
-    }
-}
-
 struct TarsHealthResponse: Decodable {
     let status: String
 }
