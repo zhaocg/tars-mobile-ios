@@ -4,6 +4,8 @@ import Foundation
 final class AppSettings: ObservableObject {
     private enum Keys {
         static let serverBaseURL = "serverBaseURL"
+        static let directBaseURL = "directBaseURL"
+        static let relayBaseURL = "relayBaseURL"
         static let sessionID = "sessionID"
         static let connectionMode = "connectionMode"
         static let relayToken = "relayToken"
@@ -13,9 +15,15 @@ final class AppSettings: ObservableObject {
 
     private let defaults: UserDefaults
 
-    @Published var serverBaseURLString: String {
+    @Published var directBaseURLString: String {
         didSet {
-            defaults.set(serverBaseURLString, forKey: Keys.serverBaseURL)
+            defaults.set(directBaseURLString, forKey: Keys.directBaseURL)
+        }
+    }
+
+    @Published var relayBaseURLString: String {
+        didSet {
+            defaults.set(relayBaseURLString, forKey: Keys.relayBaseURL)
         }
     }
 
@@ -51,12 +59,20 @@ final class AppSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.serverBaseURLString = defaults.string(forKey: Keys.serverBaseURL)
+        let legacyBaseURL = defaults.string(forKey: Keys.serverBaseURL)
+        self.directBaseURLString = defaults.string(forKey: Keys.directBaseURL)
+            ?? legacyBaseURL
             ?? "http://127.0.0.1:18991"
+        self.relayBaseURLString = defaults.string(forKey: Keys.relayBaseURL)
+            ?? Self.defaultRelayBaseURL(from: legacyBaseURL)
         self.sessionID = defaults.string(forKey: Keys.sessionID)
             ?? "mobile-main"
-        self.connectionModeRaw = defaults.string(forKey: Keys.connectionMode)
-            ?? TarsConnectionMode.direct.rawValue
+        let initialConnectionModeRaw = defaults.string(forKey: Keys.connectionMode)
+            ?? Self.defaultConnectionModeRaw
+        self.connectionModeRaw = Self.resolvedConnectionModeRaw(
+            initialConnectionModeRaw,
+            directBaseURLString: directBaseURLString
+        )
         self.relayToken = defaults.string(forKey: Keys.relayToken) ?? ""
         self.relayAgentID = defaults.string(forKey: Keys.relayAgentID) ?? "default"
         self.relayClientID = defaults.string(forKey: Keys.relayClientID)
@@ -65,15 +81,31 @@ final class AppSettings: ObservableObject {
         if defaults.string(forKey: Keys.relayClientID) == nil {
             defaults.set(relayClientID, forKey: Keys.relayClientID)
         }
+
+        if defaults.string(forKey: Keys.directBaseURL) == nil {
+            defaults.set(directBaseURLString, forKey: Keys.directBaseURL)
+        }
+
+        if defaults.string(forKey: Keys.relayBaseURL) == nil {
+            defaults.set(relayBaseURLString, forKey: Keys.relayBaseURL)
+        }
+
+        if defaults.string(forKey: Keys.connectionMode) != connectionModeRaw {
+            defaults.set(connectionModeRaw, forKey: Keys.connectionMode)
+        }
     }
 
-    var serverBaseURL: URL? {
-        let trimmed = serverBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+    var activeBaseURL: URL? {
+        let trimmed = activeBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             return nil
         }
 
         return URL(string: trimmed)?.removingTrailingSlash()
+    }
+
+    var activeBaseURLString: String {
+        connectionMode == .relay ? relayBaseURLString : directBaseURLString
     }
 
     var connectionMode: TarsConnectionMode {
@@ -82,13 +114,52 @@ final class AppSettings: ObservableObject {
 
     var connectionFingerprint: String {
         [
-            serverBaseURLString,
+            directBaseURLString,
+            relayBaseURLString,
             sessionID,
             connectionModeRaw,
             relayToken,
             relayAgentID,
             relayClientID
         ].joined(separator: "\u{1f}")
+    }
+
+    private static func defaultRelayBaseURL(from legacyBaseURL: String?) -> String {
+        guard
+            let legacyBaseURL,
+            let url = URL(string: legacyBaseURL),
+            !url.isLocalhost
+        else {
+            return "https://tarsrelay.pqcenter.cn"
+        }
+
+        return legacyBaseURL
+    }
+
+    private static var defaultConnectionModeRaw: String {
+        #if targetEnvironment(simulator)
+        return TarsConnectionMode.direct.rawValue
+        #else
+        return TarsConnectionMode.relay.rawValue
+        #endif
+    }
+
+    private static func resolvedConnectionModeRaw(
+        _ rawValue: String,
+        directBaseURLString: String
+    ) -> String {
+        #if targetEnvironment(simulator)
+        return rawValue
+        #else
+        guard
+            rawValue == TarsConnectionMode.direct.rawValue,
+            URL(string: directBaseURLString)?.isLocalhost == true
+        else {
+            return rawValue
+        }
+
+        return TarsConnectionMode.relay.rawValue
+        #endif
     }
 }
 
@@ -99,5 +170,16 @@ private extension URL {
         }
 
         return URL(string: String(absoluteString.dropLast())) ?? self
+    }
+
+    var isLocalhost: Bool {
+        guard let host = self.host?.lowercased() else {
+            return false
+        }
+
+        return host == "localhost"
+            || host == "127.0.0.1"
+            || host == "::1"
+            || host.hasSuffix(".localhost")
     }
 }

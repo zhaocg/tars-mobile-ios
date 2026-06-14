@@ -14,17 +14,22 @@ struct SettingsView: View {
                         }
                     }
 
-                    LabeledContent(settings.connectionMode == .relay ? "Relay URL" : "Server URL") {
-                        TextField(
-                            settings.connectionMode == .relay
-                                ? "https://tarsrelay.example.com"
-                                : "http://127.0.0.1:18991",
-                            text: $settings.serverBaseURLString
-                        )
-                            .keyboardType(.URL)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .multilineTextAlignment(.trailing)
+                    if settings.connectionMode == .relay {
+                        LabeledContent("Relay URL") {
+                            TextField("https://tarsrelay.pqcenter.cn", text: $settings.relayBaseURLString)
+                                .keyboardType(.URL)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .multilineTextAlignment(.trailing)
+                        }
+                    } else {
+                        LabeledContent("Server URL") {
+                            TextField("http://127.0.0.1:18991", text: $settings.directBaseURLString)
+                                .keyboardType(.URL)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .multilineTextAlignment(.trailing)
+                        }
                     }
 
                     LabeledContent("Session ID") {
